@@ -80,7 +80,7 @@ export const level2: Scenario[] = [
     beats: [
       {
         actions: [
-          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 15, y: 95 }, delay: 200, duration: 700 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 10, y: 78 }, delay: 200, duration: 700 },
         ],
         callOpensAt: 1100,
         correctCalls: ['HOLD'],

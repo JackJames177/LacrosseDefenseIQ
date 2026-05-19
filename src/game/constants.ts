@@ -237,6 +237,10 @@ export const TIMING = {
   setupMs: 1500,
   /** Brief hold between beats of a multi-call possession */
   beatGapMs: 650,
+  /** Min time the "SAVE!" confirmation + possession glow shows before BREAK */
+  saveConfirmMs: 1200,
+  /** Min time the "GROUND BALL" confirmation shows before BREAK */
+  gbConfirmMs: 1600,
   /** How long the "NOW" call cue flashes when the call window opens */
   callCueMs: 800,
   /** How long the resolution (correct/wrong + explanation) stays up */

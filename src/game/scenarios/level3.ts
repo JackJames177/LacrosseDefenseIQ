@@ -117,17 +117,18 @@ export const level3: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.M1,
-    setupHint: 'Ball one pass from your man up top.',
+    ballStartIndex: O.M2,
+    setupHint: 'Ball feeding down to X, right next to your man.',
     beats: [
       {
         actions: [
-          { type: 'pass', playerIndex: O.M1, toPlayerIndex: O.M2, delay: 200, duration: 700 },
-          { type: 'catch', playerIndex: O.M2, delay: 900, duration: 100 },
+          { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A2, delay: 200, duration: 800 },
+          { type: 'catch', playerIndex: O.A2, delay: 1000, duration: 100 },
         ],
-        callOpensAt: 1200,
+        callOpensAt: 1300,
         correctCalls: ['HOT'],
-        explanation: 'The ball is one pass from your man and you are next help. The call is HOT!',
+        explanation:
+          'The ball is one pass from your man at X and you are the closest help defender — the next slide. The call is HOT!',
       },
     ],
   },
@@ -210,7 +211,7 @@ export const level3: Scenario[] = [
     beats: [
       {
         actions: [
-          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 16, y: 95 }, delay: 200, duration: 800 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 10, y: 78 }, delay: 200, duration: 800 },
         ],
         callOpensAt: 1150,
         correctCalls: ['HOLD'],

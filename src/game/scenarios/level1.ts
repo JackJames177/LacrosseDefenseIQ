@@ -41,7 +41,7 @@ export const level1: Scenario[] = [
     beats: [
       {
         actions: [
-          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 14, y: 95 }, delay: 200, duration: 800 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 8, y: 74 }, delay: 200, duration: 800 },
         ],
         callOpensAt: 1150,
         correctCalls: ['HOLD'],
@@ -103,7 +103,7 @@ export const level1: Scenario[] = [
     beats: [
       {
         actions: [
-          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 20, y: 90 }, delay: 300, duration: 600 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 12, y: 78 }, delay: 300, duration: 600 },
         ],
         callOpensAt: 1100,
         correctCalls: ['HOLD'],
@@ -161,7 +161,7 @@ export const level1: Scenario[] = [
     beats: [
       {
         actions: [
-          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 30, y: 98 }, delay: 200, duration: 800 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 8, y: 72 }, delay: 200, duration: 800 },
         ],
         callOpensAt: 1150,
         correctCalls: ['HOLD'],

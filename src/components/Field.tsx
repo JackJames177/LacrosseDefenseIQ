@@ -11,17 +11,27 @@ export default function Field() {
   const phase = useGame((s) => s.phase)
   const pickArrow = useGame((s) => s.pickArrow)
   const breakActive = useGame((s) => s.breakActive)
+  const breakKind = useGame((s) => s.breakKind)
+  const shotLine = useGame((s) => s.shotLine)
+  const beatIndex = useGame((s) => s.beatIndex)
 
   const scenario = scenarios[scenarioIndex]
   const selfAbs = scenario ? 6 + scenario.playerDefenderIndex : -1
   const guardedAbs = scenario ? scenario.guardedAttackerIndex : -1
+  const inPlay = positions.length > 0
+  const beat = scenario?.beats[beatIndex]
+  const isTwoCall =
+    phase === 'call' && !!beat && beat.correctCalls.includes('TWO')
 
-  // ball carrier = nearest offensive player when not in air
+  // ball carrier = nearest player to the ball when not in air.
+  // After a ground ball the scooping DEFENDER carries it, so include defense.
+  const carrierTeam: 'offense' | 'any' =
+    breakActive && breakKind === 'ground_ball' ? 'any' : 'offense'
   let carrierAbs = -1
-  if (!ball.inAir) {
+  if (!ball.inAir && breakKind !== 'save') {
     let best = Infinity
     positions.forEach((p, i) => {
-      if (p.team !== 'offense') return
+      if (carrierTeam === 'offense' && p.team !== 'offense') return
       const d = (p.x - ball.x) ** 2 + (p.y - ball.y) ** 2
       if (d < best && d < 16) {
         best = d
@@ -29,6 +39,27 @@ export default function Field() {
       }
     })
   }
+
+  // FIX 2: during a TWO call, tag the true first-slide (HOT) defender so the
+  // player SEES someone else is the first help — therefore they are TWO.
+  // The HOT man is the nearest HELP defender, excluding the on-ball defender
+  // (defenders map 1:1 to offense: D_i guards O_i) and the player themself.
+  let hotAbs = -1
+  if (isTwoCall) {
+    const onBallDefAbs = carrierAbs >= 0 ? carrierAbs + 6 : -1
+    let best = Infinity
+    positions.forEach((p, i) => {
+      if (p.team !== 'defense' || i === selfAbs || i === onBallDefAbs) return
+      const d = (p.x - ball.x) ** 2 + (p.y - ball.y) ** 2
+      if (d < best) {
+        best = d
+        hotAbs = i
+      }
+    })
+  }
+
+  const GX = FIELD.creaseCenter.x
+  const GY = FIELD.goalLineY
 
   const flash =
     phase === 'resolved-correct'
@@ -118,6 +149,64 @@ export default function Field() {
           strokeWidth={0.9}
         />
 
+        {/* shot path — visible arc toward the cage */}
+        {shotLine && (
+          <line
+            key={`shot-${scenarioIndex}-${beatIndex}`}
+            x1={shotLine.x1}
+            y1={shotLine.y1}
+            x2={shotLine.x2}
+            y2={shotLine.y2}
+            stroke={COLORS.ball}
+            strokeWidth={0.9}
+            strokeDasharray="3 2"
+            opacity={0.7}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
+
+        {/* goalie — always in the cage during play */}
+        {inPlay && (
+          <g style={{ pointerEvents: 'none' }}>
+            {breakKind === 'save' && (
+              <circle
+                cx={GX}
+                cy={GY - 4}
+                r={6.5}
+                fill="none"
+                stroke={COLORS.ball}
+                strokeWidth={1.4}
+                className="animate-pulseRing"
+              />
+            )}
+            <circle
+              cx={GX}
+              cy={GY - 4}
+              r={3.4}
+              fill={breakKind === 'save' ? COLORS.accent : COLORS.defense}
+              stroke="#06121a"
+              strokeWidth={0.7}
+              className={breakKind === 'save' ? 'animate-pop' : undefined}
+              style={
+                breakKind === 'save'
+                  ? { filter: `drop-shadow(0 0 4px ${COLORS.accent})` }
+                  : undefined
+              }
+            />
+            <text
+              x={GX}
+              y={GY - 2.8}
+              textAnchor="middle"
+              fontSize={3}
+              fontWeight={700}
+              fill="#06121a"
+              style={{ fontFamily: 'Space Mono, monospace' }}
+            >
+              G
+            </text>
+          </g>
+        )}
+
         {/* players */}
         {positions.map((p, i) => (
           <Player
@@ -128,6 +217,26 @@ export default function Field() {
             isGuardedMan={i === guardedAbs}
           />
         ))}
+
+        {/* FIX 2: HOT tag on the real first-slide defender during a TWO call */}
+        {hotAbs >= 0 && positions[hotAbs] && (
+          <text
+            x={positions[hotAbs].x}
+            y={positions[hotAbs].y - 5.5}
+            textAnchor="middle"
+            fontSize={4}
+            fontWeight={700}
+            fill={COLORS.ball}
+            className="animate-pop"
+            style={{
+              fontFamily: '"Bebas Neue", sans-serif',
+              pointerEvents: 'none',
+              filter: `drop-shadow(0 0 2px ${COLORS.ball})`,
+            }}
+          >
+            HOT
+          </text>
+        )}
 
         {/* ball */}
         <circle
@@ -169,6 +278,40 @@ export default function Field() {
                 ▲
               </text>
             ))}
+            {breakKind === 'save' && (
+              <text
+                x={GX}
+                y={GY - 11}
+                textAnchor="middle"
+                fontSize={9}
+                fontWeight={700}
+                fill={COLORS.accent}
+                className="animate-pop"
+                style={{
+                  fontFamily: '"Bebas Neue", sans-serif',
+                  filter: `drop-shadow(0 0 4px ${COLORS.accent})`,
+                }}
+              >
+                SAVE!
+              </text>
+            )}
+            {breakKind === 'ground_ball' && (
+              <text
+                x={FIELD.W / 2}
+                y={Math.max(ball.y - 7, 20)}
+                textAnchor="middle"
+                fontSize={5.4}
+                fontWeight={700}
+                fill={COLORS.accent}
+                className="animate-pop"
+                style={{
+                  fontFamily: '"Bebas Neue", sans-serif',
+                  filter: `drop-shadow(0 0 3px ${COLORS.accent})`,
+                }}
+              >
+                GROUND BALL — OUR POSSESSION!
+              </text>
+            )}
           </g>
         )}
 

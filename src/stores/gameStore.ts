@@ -64,6 +64,10 @@ interface GameState {
   ball: BallState
   pickArrow: PickArrow | null
   breakActive: boolean
+  /** what produced the BREAK so the field can confirm possession */
+  breakKind: 'save' | 'ground_ball' | null
+  /** transient shot path for the visible arc */
+  shotLine: { x1: number; y1: number; x2: number; y2: number } | null
   score: number
   streak: number
   timerMs: number
@@ -107,6 +111,8 @@ export const useGame = create<GameState>((set, get) => {
     let ball = get().ball
     let pickArrow = get().pickArrow
     let breakActive = get().breakActive
+    let breakKind = get().breakKind
+    let shotLine = get().shotLine
 
     const move = (toX: number, toY: number) => {
       positions = positions.slice()
@@ -118,14 +124,22 @@ export const useGame = create<GameState>((set, get) => {
       ball = { x: to.x, y: to.y, inAir: true }
       later(() => set((s) => ({ ball: { ...s.ball, inAir: false } })), a.duration)
     } else if (a.type === 'shot') {
+      const from = positions[abs]
+      shotLine = { x1: from.x, y1: from.y, x2: GOAL.x, y2: GOAL.y - 2 }
       ball = { x: GOAL.x, y: GOAL.y - 2, inAir: true }
     } else if (a.type === 'save') {
-      ball = { x: GOAL.x, y: GOAL.y - 1, inAir: false }
+      // goalie has it — ball sits in the goalmouth, possession flips
+      ball = { x: GOAL.x, y: GOAL.y - 2, inAir: false }
       breakActive = true
+      breakKind = 'save'
+      shotLine = null
     } else if (a.type === 'ground_ball') {
-      const t = a.target ?? { x: ball.x, y: ball.y }
-      ball = { x: t.x, y: t.y, inAir: false }
+      // the scooping defender runs TO the loose ball, then carries it
+      const loose = a.target ?? { x: ball.x, y: ball.y }
+      move(loose.x, loose.y)
+      ball = { x: loose.x, y: loose.y, inAir: false }
       breakActive = true
+      breakKind = 'ground_ball'
     } else if (a.type === 'pick') {
       if (a.target) move(a.target.x, a.target.y)
       if (a.targetDefenderIndex != null) {
@@ -146,7 +160,7 @@ export const useGame = create<GameState>((set, get) => {
       if (hadBall) ball = { x: a.target.x, y: a.target.y, inAir: false }
     }
 
-    set({ positions, ball, pickArrow, breakActive })
+    set({ positions, ball, pickArrow, breakActive, breakKind, shotLine })
   }
 
   /** READY gate — show the formation static, no timer, no input. */
@@ -172,6 +186,8 @@ export const useGame = create<GameState>((set, get) => {
       ball: { x: start.x, y: start.y, inAir: false },
       pickArrow: null,
       breakActive: false,
+      breakKind: null,
+      shotLine: null,
       scenarioCalls: [],
       lastOutcome: null,
       callOpenedAt: 0,
@@ -196,6 +212,8 @@ export const useGame = create<GameState>((set, get) => {
       ball: { x: start.x, y: start.y, inAir: false },
       pickArrow: null,
       breakActive: false,
+      breakKind: null,
+      shotLine: null,
       scenarioCalls: [],
       lastOutcome: null,
       callOpenedAt: 0,
@@ -210,10 +228,29 @@ export const useGame = create<GameState>((set, get) => {
     const beat = scenario?.beats[b]
     if (!beat) return
 
-    set({ beatIndex: b, phase: 'action', pickArrow: null, callOpenedAt: 0 })
+    set({
+      beatIndex: b,
+      phase: 'action',
+      pickArrow: null,
+      breakActive: false,
+      breakKind: null,
+      shotLine: null,
+      callOpenedAt: 0,
+    })
 
     for (const a of beat.actions) {
       later(() => applyAction(a), a.delay)
+    }
+
+    // BREAK beats: don't open the call window until the save / ground-ball
+    // confirmation has clearly shown that our team has the ball.
+    let openAt = beat.callOpensAt
+    for (const a of beat.actions) {
+      if (a.type === 'save') {
+        openAt = Math.max(openAt, a.delay + a.duration + TIMING.saveConfirmMs)
+      } else if (a.type === 'ground_ball') {
+        openAt = Math.max(openAt, a.delay + a.duration + TIMING.gbConfirmMs)
+      }
     }
 
     later(() => {
@@ -222,7 +259,7 @@ export const useGame = create<GameState>((set, get) => {
       later(() => {
         if (get().phase === 'call') resolveBeat(null, true, timerMs)
       }, timerMs)
-    }, beat.callOpensAt)
+    }, openAt)
   }
 
   function resolveBeat(
@@ -325,6 +362,8 @@ export const useGame = create<GameState>((set, get) => {
     ball: { x: 50, y: 60, inAir: false },
     pickArrow: null,
     breakActive: false,
+    breakKind: null,
+    shotLine: null,
     score: 0,
     streak: 0,
     timerMs: 4000,
