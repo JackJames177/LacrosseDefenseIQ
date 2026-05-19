@@ -1,17 +1,20 @@
 import { create } from 'zustand'
 import type {
+  CallAttempt,
   DefensiveCall,
+  GameAction,
   GamePhase,
   LevelResult,
   PlayerPosition,
   Scenario,
   ScenarioResult,
 } from '../game/types'
-import { LEVELS, TIMING } from '../game/constants'
+import { FIELD, LEVELS, TIMING } from '../game/constants'
 import {
   ballHolderAtStart,
   buildLevelResult,
   buildScenarioResult,
+  makeCallAttempt,
   scoreCall,
 } from '../game/engine'
 import { scenariosForLevel } from '../game/scenarios'
@@ -31,15 +34,23 @@ export interface BallState {
   inAir: boolean
 }
 
+export interface PickArrow {
+  x: number
+  y: number
+  dir: 'left' | 'right'
+}
+
 export interface Outcome {
   correct: boolean
   timedOut: boolean
   points: number
   speedBonus: boolean
+  pickBonus: boolean
   multiplier: number
   chosen: DefensiveCall | null
   correctCall: DefensiveCall
   explanation: string
+  hasMoreBeats: boolean
 }
 
 interface GameState {
@@ -47,14 +58,19 @@ interface GameState {
   level: number | null
   scenarios: Scenario[]
   scenarioIndex: number
+  beatIndex: number
   phase: GamePhase
   positions: PlayerPosition[]
   ball: BallState
+  pickArrow: PickArrow | null
+  breakActive: boolean
   score: number
   streak: number
   timerMs: number
   /** epoch ms when the call window opened (0 if not open) */
   callOpenedAt: number
+  /** calls collected for the in-progress scenario (multi-beat possessions) */
+  scenarioCalls: CallAttempt[]
   results: ScenarioResult[]
   lastOutcome: Outcome | null
   levelResult: LevelResult | null
@@ -76,32 +92,64 @@ function later(fn: () => void, ms: number) {
   timers.push(setTimeout(fn, ms))
 }
 
-function offenseAbs(i: number) {
-  return i
-}
-function defenseAbs(i: number) {
-  return 6 + i
-}
+const offenseAbs = (i: number) => i
+const defenseAbs = (i: number) => 6 + i
+
+const GOAL = { x: FIELD.creaseCenter.x, y: FIELD.goalLineY }
 
 export const useGame = create<GameState>((set, get) => {
-  /** Apply one action's movement to the live positions (CSS transitions animate it). */
-  function applyAction(
-    a: Scenario['actions'][number],
-    positions: PlayerPosition[]
-  ): PlayerPosition[] {
+  /** Apply one action to the live positions / ball (CSS transitions animate). */
+  function applyAction(a: GameAction) {
     const team = a.team ?? 'offense'
     const abs =
       team === 'defense' ? defenseAbs(a.playerIndex) : offenseAbs(a.playerIndex)
-    if (!a.target) return positions
-    const next = positions.slice()
-    next[abs] = { ...next[abs], x: a.target.x, y: a.target.y }
-    return next
+    let positions = get().positions
+    let ball = get().ball
+    let pickArrow = get().pickArrow
+    let breakActive = get().breakActive
+
+    const move = (toX: number, toY: number) => {
+      positions = positions.slice()
+      positions[abs] = { ...positions[abs], x: toX, y: toY }
+    }
+
+    if (a.type === 'pass' && a.toPlayerIndex != null) {
+      const to = positions[offenseAbs(a.toPlayerIndex)]
+      ball = { x: to.x, y: to.y, inAir: true }
+      later(() => set((s) => ({ ball: { ...s.ball, inAir: false } })), a.duration)
+    } else if (a.type === 'shot') {
+      ball = { x: GOAL.x, y: GOAL.y - 2, inAir: true }
+    } else if (a.type === 'save') {
+      ball = { x: GOAL.x, y: GOAL.y - 1, inAir: false }
+      breakActive = true
+    } else if (a.type === 'ground_ball') {
+      const t = a.target ?? { x: ball.x, y: ball.y }
+      ball = { x: t.x, y: t.y, inAir: false }
+      breakActive = true
+    } else if (a.type === 'pick') {
+      if (a.target) move(a.target.x, a.target.y)
+      if (a.targetDefenderIndex != null) {
+        const d = get().positions[defenseAbs(a.targetDefenderIndex)]
+        pickArrow = {
+          x: d.x,
+          y: d.y,
+          dir: a.pickDirection ?? 'left',
+        }
+      }
+    } else if (a.target) {
+      // dodge / cut / move / catch
+      const hadBall =
+        team === 'offense' &&
+        Math.abs(ball.x - positions[abs].x) < 0.6 &&
+        Math.abs(ball.y - positions[abs].y) < 0.6
+      move(a.target.x, a.target.y)
+      if (hadBall) ball = { x: a.target.x, y: a.target.y, inAir: false }
+    }
+
+    set({ positions, ball, pickArrow, breakActive })
   }
 
-  /**
-   * READY gate — show the upcoming scenario's formation static, no timer,
-   * no input. Mason taps READY (beginScenario) to start the whistle.
-   */
+  /** READY gate — show the formation static, no timer, no input. */
   function prepareScenario(index: number) {
     clearTimers()
     const { scenarios } = get()
@@ -112,117 +160,96 @@ export const useGame = create<GameState>((set, get) => {
     }
     const initial = scenario.initialPositions.map((p) => ({ ...p }))
     const holderIdx = ballHolderAtStart(scenario)
-    const start =
-      scenario.ballOverride ??
-      ({
-        x: initial[offenseAbs(holderIdx)].x,
-        y: initial[offenseAbs(holderIdx)].y,
-      } as { x: number; y: number })
+    const start = scenario.ballOverride ?? {
+      x: initial[offenseAbs(holderIdx)].x,
+      y: initial[offenseAbs(holderIdx)].y,
+    }
     set({
       scenarioIndex: index,
+      beatIndex: 0,
       phase: 'ready',
       positions: initial,
       ball: { x: start.x, y: start.y, inAir: false },
+      pickArrow: null,
+      breakActive: false,
+      scenarioCalls: [],
       lastOutcome: null,
       callOpenedAt: 0,
     })
   }
 
-  function runScenario(index: number) {
+  function startScenario() {
     clearTimers()
-    const { scenarios } = get()
-    const scenario = scenarios[index]
+    const { scenarios, scenarioIndex } = get()
+    const scenario = scenarios[scenarioIndex]
     if (!scenario) return
-
     const initial = scenario.initialPositions.map((p) => ({ ...p }))
     const holderIdx = ballHolderAtStart(scenario)
-    const start =
-      scenario.ballOverride ??
-      ({
-        x: initial[offenseAbs(holderIdx)].x,
-        y: initial[offenseAbs(holderIdx)].y,
-      } as { x: number; y: number })
-
+    const start = scenario.ballOverride ?? {
+      x: initial[offenseAbs(holderIdx)].x,
+      y: initial[offenseAbs(holderIdx)].y,
+    }
     set({
-      scenarioIndex: index,
+      beatIndex: 0,
       phase: 'setup',
       positions: initial,
       ball: { x: start.x, y: start.y, inAir: false },
+      pickArrow: null,
+      breakActive: false,
+      scenarioCalls: [],
       lastOutcome: null,
       callOpenedAt: 0,
     })
-
-    // SETUP -> ACTION
-    later(() => {
-      set({ phase: 'action' })
-
-      // schedule each action's movement + ball tracking
-      for (const a of scenario.actions) {
-        later(() => {
-          const positions = applyAction(a, get().positions)
-          let ball = get().ball
-          const team = a.team ?? 'offense'
-
-          if (a.type === 'pass' && a.toPlayerIndex != null) {
-            const to = positions[offenseAbs(a.toPlayerIndex)]
-            ball = { x: to.x, y: to.y, inAir: true }
-          } else if (
-            (a.type === 'dodge' || a.type === 'move' || a.type === 'cut') &&
-            team === 'offense' &&
-            a.target
-          ) {
-            // ball follows the carrier if this offensive player has it
-            const carrier = positions[offenseAbs(a.playerIndex)]
-            const hadBall =
-              Math.abs(get().ball.x - get().positions[offenseAbs(a.playerIndex)].x) < 0.5 &&
-              Math.abs(get().ball.y - get().positions[offenseAbs(a.playerIndex)].y) < 0.5
-            if (hadBall) ball = { x: carrier.x, y: carrier.y, inAir: false }
-          }
-          set({ positions, ball })
-
-          if (a.type === 'pass') {
-            // ball lands when flight completes
-            later(() => {
-              set((s) => ({ ball: { ...s.ball, inAir: false } }))
-            }, a.duration)
-          }
-        }, a.delay)
-      }
-
-      // ACTION -> CALL window opens
-      later(() => {
-        set({ phase: 'call', callOpenedAt: Date.now() })
-        const timerMs = get().timerMs
-        later(() => {
-          if (get().phase === 'call') resolveTimeout()
-        }, timerMs)
-      }, scenario.callOpensAt)
-    }, TIMING.setupMs)
+    later(() => runBeat(0), TIMING.setupMs)
   }
 
-  function finishScenario(
+  /** Play one beat: animate its actions, then open the call window. */
+  function runBeat(b: number) {
+    const { scenarios, scenarioIndex } = get()
+    const scenario = scenarios[scenarioIndex]
+    const beat = scenario?.beats[b]
+    if (!beat) return
+
+    set({ beatIndex: b, phase: 'action', pickArrow: null, callOpenedAt: 0 })
+
+    for (const a of beat.actions) {
+      later(() => applyAction(a), a.delay)
+    }
+
+    later(() => {
+      set({ phase: 'call', callOpenedAt: Date.now() })
+      const timerMs = get().timerMs
+      later(() => {
+        if (get().phase === 'call') resolveBeat(null, true, timerMs)
+      }, timerMs)
+    }, beat.callOpensAt)
+  }
+
+  function resolveBeat(
     chosen: DefensiveCall | null,
     timedOut: boolean,
     reactionMs: number
   ) {
-    const { scenarios, scenarioIndex, streak, timerMs, score, results } = get()
-    const scenario = scenarios[scenarioIndex]
-    const outcome = scoreCall(
-      chosen,
-      scenario,
-      reactionMs,
-      timerMs,
-      streak
-    )
-    const result = buildScenarioResult(
-      scenario,
+    const {
+      scenarios,
       scenarioIndex,
+      beatIndex,
+      streak,
+      timerMs,
+      score,
+      scenarioCalls,
+    } = get()
+    const scenario = scenarios[scenarioIndex]
+    const beat = scenario.beats[beatIndex]
+    const outcome = scoreCall(chosen, beat, reactionMs, timerMs, streak)
+    const attempt = makeCallAttempt(
+      beat,
       chosen,
       reactionMs,
       timedOut,
       outcome.points
     )
-    const newStreak = outcome.correct ? streak + 1 : 0
+    const hasMoreBeats = beatIndex + 1 < scenario.beats.length
 
     set({
       phase: timedOut
@@ -231,34 +258,46 @@ export const useGame = create<GameState>((set, get) => {
           ? 'resolved-correct'
           : 'resolved-wrong',
       score: score + outcome.points,
-      streak: newStreak,
-      results: [...results, result],
+      streak: outcome.correct ? streak + 1 : 0,
+      scenarioCalls: [...scenarioCalls, attempt],
       callOpenedAt: 0,
       lastOutcome: {
         correct: outcome.correct,
         timedOut,
         points: outcome.points,
         speedBonus: outcome.speedBonus,
+        pickBonus: outcome.pickBonus,
         multiplier: outcome.multiplier,
         chosen,
-        correctCall: scenario.correctCalls[0],
-        explanation: scenario.explanation,
+        correctCall: beat.correctCalls[0],
+        explanation: beat.explanation,
+        hasMoreBeats,
       },
     })
 
     later(() => {
-      const { scenarioIndex: idx, scenarios: scns } = get()
-      if (idx + 1 < scns.length) {
-        // Back to the READY gate — Mason controls the pace between plays.
-        prepareScenario(idx + 1)
+      if (hasMoreBeats) {
+        runBeat(beatIndex + 1)
       } else {
-        finishLevel()
+        finishScenario()
       }
     }, TIMING.resolutionHoldMs)
   }
 
-  function resolveTimeout() {
-    finishScenario(null, true, get().timerMs)
+  function finishScenario() {
+    const { scenarios, scenarioIndex, scenarioCalls, results } = get()
+    const scenario = scenarios[scenarioIndex]
+    const result = buildScenarioResult(
+      scenario,
+      scenarioIndex,
+      scenarioCalls
+    )
+    set({ results: [...results, result] })
+    if (scenarioIndex + 1 < scenarios.length) {
+      prepareScenario(scenarioIndex + 1)
+    } else {
+      finishLevel()
+    }
   }
 
   function finishLevel() {
@@ -280,13 +319,17 @@ export const useGame = create<GameState>((set, get) => {
     level: null,
     scenarios: [],
     scenarioIndex: 0,
+    beatIndex: 0,
     phase: 'setup',
     positions: [],
     ball: { x: 50, y: 60, inAir: false },
+    pickArrow: null,
+    breakActive: false,
     score: 0,
     streak: 0,
     timerMs: 4000,
     callOpenedAt: 0,
+    scenarioCalls: [],
     results: [],
     lastOutcome: null,
     levelResult: null,
@@ -319,14 +362,13 @@ export const useGame = create<GameState>((set, get) => {
 
     beginScenario: () => {
       if (get().phase !== 'ready') return
-      runScenario(get().scenarioIndex)
+      startScenario()
     },
 
     makeCall: (call) => {
       const { phase, callOpenedAt } = get()
       if (phase !== 'call' || callOpenedAt === 0) return
-      const reactionMs = Date.now() - callOpenedAt
-      finishScenario(call, false, reactionMs)
+      resolveBeat(call, false, Date.now() - callOpenedAt)
     },
 
     abortToMenu: () => {

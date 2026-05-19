@@ -9,6 +9,8 @@ export default function Field() {
   const scenarios = useGame((s) => s.scenarios)
   const scenarioIndex = useGame((s) => s.scenarioIndex)
   const phase = useGame((s) => s.phase)
+  const pickArrow = useGame((s) => s.pickArrow)
+  const breakActive = useGame((s) => s.breakActive)
 
   const scenario = scenarios[scenarioIndex]
   const selfAbs = scenario ? 6 + scenario.playerDefenderIndex : -1
@@ -140,6 +142,72 @@ export default function Field() {
             filter: `drop-shadow(0 0 ${ball.inAir ? 3 : 1.5}px ${COLORS.ball})`,
           }}
         />
+
+        {/* BREAK / transition cue — ball is dead, get heads up and clear */}
+        {breakActive && (
+          <g style={{ pointerEvents: 'none' }}>
+            <circle
+              cx={FIELD.creaseCenter.x}
+              cy={FIELD.goalLineY - 1}
+              r={4}
+              fill="none"
+              stroke={COLORS.accent}
+              strokeWidth={1}
+              className="animate-pulseRing"
+            />
+            {[0, 1, 2].map((i) => (
+              <text
+                key={i}
+                x={FIELD.W / 2}
+                y={FIELD.midfieldY + 8 + i * 7}
+                textAnchor="middle"
+                fontSize={6}
+                fill={COLORS.accent}
+                opacity={0.5 - i * 0.13}
+                style={{ fontFamily: '"Bebas Neue", sans-serif' }}
+              >
+                ▲
+              </text>
+            ))}
+          </g>
+        )}
+
+        {/* PICK direction indicator — amber arrow from the screen side */}
+        {pickArrow && (phase === 'action' || phase === 'call') && (
+          <g
+            key={`pick-${scenarioIndex}-${pickArrow.dir}-${Math.round(
+              pickArrow.x
+            )}`}
+            style={{ pointerEvents: 'none' }}
+          >
+            <text
+              x={pickArrow.x + (pickArrow.dir === 'left' ? -8 : 8)}
+              y={pickArrow.y - 7}
+              textAnchor="middle"
+              fontSize={9}
+              fontWeight={700}
+              fill={COLORS.ball}
+              className="animate-pop"
+              style={{
+                fontFamily: '"Bebas Neue", sans-serif',
+                filter: `drop-shadow(0 0 3px ${COLORS.ball})`,
+              }}
+            >
+              {pickArrow.dir === 'left' ? '◀' : '▶'}
+            </text>
+            <circle
+              cx={pickArrow.x}
+              cy={pickArrow.y}
+              r={6}
+              fill="none"
+              stroke={COLORS.ball}
+              strokeWidth={0.9}
+              strokeDasharray="2 1.5"
+              opacity={0.8}
+              className="animate-pulseRing"
+            />
+          </g>
+        )}
 
         {flash && (
           <rect

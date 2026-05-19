@@ -98,45 +98,86 @@ export default function PostGameBreakdown() {
         PLAY BY PLAY
       </h3>
       <div className="flex flex-col gap-1.5 mb-6 max-h-72 overflow-y-auto no-scrollbar">
-        {result.scenarioResults.map((r) => (
-          <div
-            key={r.scenarioId}
-            className={`rounded-lg border p-3 ${
-              r.correct
-                ? 'border-accent/30 bg-accent/5'
-                : 'border-error/30 bg-error/5'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs text-white/70 flex-1">
-                #{r.index + 1} · {r.setupHint}
-              </span>
-              <span
-                className={`font-display text-lg ${
-                  r.correct ? 'text-accent' : 'text-error'
-                }`}
-              >
-                {r.correct ? '✓' : '✗'}{' '}
-                {r.timedOut
-                  ? 'TIMEOUT'
-                  : r.playerCall
-                    ? CALL_LABELS[r.playerCall]
-                    : '—'}
-              </span>
+        {result.scenarioResults.map((r) => {
+          const allCorrect = r.calls.every((c) => c.correct)
+          const multi = r.calls.length > 1
+          return (
+            <div
+              key={r.scenarioId}
+              className={`rounded-lg border p-3 ${
+                allCorrect
+                  ? 'border-accent/30 bg-accent/5'
+                  : 'border-error/30 bg-error/5'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs text-white/70 flex-1">
+                  #{r.index + 1} · {r.setupHint}
+                </span>
+                {multi && (
+                  <span className="font-mono text-[10px] text-ball/70 shrink-0">
+                    {r.calls.filter((c) => c.correct).length}/{r.calls.length}{' '}
+                    calls
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 flex flex-col gap-1.5">
+                {r.calls.map((c, ci) => (
+                  <div
+                    key={ci}
+                    className={
+                      multi ? 'border-l-2 border-white/10 pl-2' : ''
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[11px] text-white/45">
+                        {multi ? `Call ${ci + 1}` : 'Your call'}
+                        {c.breakTrigger
+                          ? ` · ${
+                              c.breakTrigger === 'save'
+                                ? 'goalie save'
+                                : 'ground ball'
+                            }`
+                          : ''}
+                      </span>
+                      <span
+                        className={`font-display text-base ${
+                          c.correct ? 'text-accent' : 'text-error'
+                        }`}
+                      >
+                        {c.correct ? '✓' : '✗'}{' '}
+                        {c.timedOut
+                          ? 'TIMEOUT'
+                          : c.playerCall
+                            ? CALL_LABELS[c.playerCall]
+                            : '—'}
+                        {!c.correct && !c.timedOut && (
+                          <span className="text-white/40">
+                            {' '}
+                            → {CALL_LABELS[c.correctCall]}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    {c.correct && !c.timedOut && (
+                      <div className="font-mono text-[10px] text-white/40">
+                        {CALL_LABELS[c.correctCall]} ·{' '}
+                        {(c.reactionMs / 1000).toFixed(2)}s · +
+                        {c.pointsEarned}
+                      </div>
+                    )}
+                    {!c.correct && (
+                      <p className="font-body text-xs text-white/70 mt-0.5">
+                        {c.explanation}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="font-mono text-[11px] text-white/45 mt-1">
-              Answer: {CALL_LABELS[r.correctCall]}
-              {r.correct && !r.timedOut
-                ? ` · ${(r.reactionMs / 1000).toFixed(2)}s · +${r.pointsEarned}`
-                : ''}
-            </div>
-            {!r.correct && (
-              <p className="font-body text-xs text-white/70 mt-1">
-                {r.explanation}
-              </p>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {isNewHigh && result.totalScore > 0 && (

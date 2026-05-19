@@ -31,6 +31,8 @@ export const SCORING = {
   /** call made under this fraction of the timer earns the speed bonus */
   speedThreshold: 0.5,
   slowPoints: 75,
+  /** extra points for nailing the correct PICK direction (L vs R) */
+  pickPrecisionBonus: 25,
 } as const
 
 /** streak -> multiplier thresholds (checked high to low) */
@@ -64,11 +66,13 @@ export const CALL_LABELS: Record<DefensiveCall, string> = {
   HOT: 'HOT',
   TWO: 'TWO',
   SLIDE: 'SLIDE',
-  HOLD: 'HOLD',
-  CHECK: 'CHECK',
   FIRE: 'FIRE',
-  CUTTER: 'CUTTER',
+  HOLD: 'HOLD',
   TOPSIDE: 'TOPSIDE',
+  CUTTER: 'CUTTER',
+  PICK_LEFT: 'PICK L',
+  PICK_RIGHT: 'PICK R',
+  BREAK: 'BREAK',
 }
 
 export const CALL_FULL: Record<DefensiveCall, string> = {
@@ -76,11 +80,13 @@ export const CALL_FULL: Record<DefensiveCall, string> = {
   HOT: "I'M HOT!",
   TWO: "I'M TWO!",
   SLIDE: 'SLIDE! SLIDE!',
-  HOLD: 'HOLD!',
-  CHECK: 'CHECK!',
   FIRE: 'FIRE! FIRE!',
-  CUTTER: 'CUTTER!',
+  HOLD: 'HOLD!',
   TOPSIDE: 'TOPSIDE!',
+  CUTTER: 'CUTTER!',
+  PICK_LEFT: 'PICK LEFT!',
+  PICK_RIGHT: 'PICK RIGHT!',
+  BREAK: 'BREAK!',
 }
 
 export const CALL_KEYS: Record<DefensiveCall, string> = {
@@ -88,11 +94,13 @@ export const CALL_KEYS: Record<DefensiveCall, string> = {
   HOT: 'H',
   TWO: 'T',
   SLIDE: 'S',
-  HOLD: 'O',
-  CHECK: 'C',
   FIRE: 'F',
-  CUTTER: 'U',
+  HOLD: 'O',
   TOPSIDE: 'P',
+  CUTTER: 'U',
+  PICK_LEFT: 'L',
+  PICK_RIGHT: 'R',
+  BREAK: 'K',
 }
 
 export const KEY_TO_CALL: Record<string, DefensiveCall> = Object.entries(
@@ -103,60 +111,89 @@ export const KEY_TO_CALL: Record<string, DefensiveCall> = Object.entries(
 }, {} as Record<string, DefensiveCall>)
 
 export const CALL_TRIGGERS: Record<DefensiveCall, string> = {
-  BALL: 'Your man receives or has the ball and is a threat.',
-  HOT: "You're the nearest help defender — next slide.",
+  BALL: "You're on the ball carrier and he's a threat.",
+  HOT: "You're the next slide — nearest help defender.",
   TWO: "You're two passes away, in help-side position.",
-  SLIDE: 'A teammate got beat on a dodge — you slide to help.',
-  HOLD: 'Your man has the ball but is NOT threatening (cradling / facing away).',
-  CHECK: 'Ball is in the air on a pass, or loose on the ground.',
-  FIRE: "You're getting beaten on a dodge — bring the hot man early.",
-  CUTTER: 'An off-ball attacker is cutting through the crease.',
-  TOPSIDE: 'Direct a teammate to force the ball carrier away from the middle.',
+  SLIDE: "You're sliding to help a beaten teammate.",
+  FIRE: "You're getting beaten — you need help NOW.",
+  HOLD: "Your man has the ball but isn't threatening.",
+  TOPSIDE: 'Direct a teammate to force the dodger away from the middle.',
+  CUTTER: 'An off-ball man is cutting through the crease.',
+  PICK_LEFT: 'A screen is being set on a teammate — call the side.',
+  PICK_RIGHT: 'A screen is being set on a teammate — call the side.',
+  BREAK: 'Save or ground ball — transition to the clear.',
 }
+
+/** Display order for the call-button grid (PICK pair kept together). */
+export const BUTTON_ORDER: DefensiveCall[] = [
+  'BALL',
+  'HOT',
+  'TWO',
+  'SLIDE',
+  'FIRE',
+  'HOLD',
+  'TOPSIDE',
+  'CUTTER',
+  'BREAK',
+  'PICK_LEFT',
+  'PICK_RIGHT',
+]
 
 export const LEVELS: LevelMeta[] = [
   {
     level: 1,
-    name: 'Ball Awareness',
-    blurb: 'Learn BALL, HOLD, and CHECK. Slow and steady.',
-    calls: ['BALL', 'HOLD', 'CHECK'],
+    name: 'Ball Basics',
+    blurb: 'BALL, HOLD, and BREAK. Simple and confidence-building.',
+    calls: ['BALL', 'HOLD', 'BREAK'],
     timerSeconds: 6,
   },
   {
     level: 2,
     name: 'Know Your Role',
-    blurb: 'Add HOT and TWO. Read the ball relative to your man.',
-    calls: ['BALL', 'HOLD', 'CHECK', 'HOT', 'TWO'],
+    blurb: 'Add HOT and TWO. Where is the ball relative to you?',
+    calls: ['BALL', 'HOLD', 'BREAK', 'HOT', 'TWO'],
     timerSeconds: 5,
   },
   {
     level: 3,
     name: 'The Slide',
-    blurb: 'Add SLIDE. A teammate gets beat — go help.',
-    calls: ['BALL', 'HOLD', 'CHECK', 'HOT', 'TWO', 'SLIDE'],
+    blurb: 'Add SLIDE and FIRE. Help a beaten teammate — or call for help.',
+    calls: ['BALL', 'HOLD', 'BREAK', 'HOT', 'TWO', 'SLIDE', 'FIRE'],
     timerSeconds: 4.5,
   },
   {
     level: 4,
-    name: 'Under Pressure',
-    blurb: 'Add FIRE. Your man dodges at you — get early help.',
-    calls: ['BALL', 'HOLD', 'CHECK', 'HOT', 'TWO', 'SLIDE', 'FIRE'],
-    timerSeconds: 4,
-  },
-  {
-    level: 5,
     name: 'Eyes Everywhere',
-    blurb: 'All 9 calls. Spot cutters and direct teammates.',
+    blurb: 'Add CUTTER and TOPSIDE. Read what happens off the ball.',
     calls: [
       'BALL',
       'HOLD',
-      'CHECK',
+      'BREAK',
       'HOT',
       'TWO',
       'SLIDE',
       'FIRE',
       'CUTTER',
       'TOPSIDE',
+    ],
+    timerSeconds: 4,
+  },
+  {
+    level: 5,
+    name: 'Pick Apart',
+    blurb: 'Add PICK LEFT / RIGHT. Read the screens. All 10 calls.',
+    calls: [
+      'BALL',
+      'HOLD',
+      'BREAK',
+      'HOT',
+      'TWO',
+      'SLIDE',
+      'FIRE',
+      'CUTTER',
+      'TOPSIDE',
+      'PICK_LEFT',
+      'PICK_RIGHT',
     ],
     timerSeconds: 3.5,
   },
@@ -167,13 +204,15 @@ export const LEVELS: LevelMeta[] = [
     calls: [
       'BALL',
       'HOLD',
-      'CHECK',
+      'BREAK',
       'HOT',
       'TWO',
       'SLIDE',
       'FIRE',
       'CUTTER',
       'TOPSIDE',
+      'PICK_LEFT',
+      'PICK_RIGHT',
     ],
     timerSeconds: 3,
   },
@@ -184,16 +223,20 @@ export const ALL_CALLS: DefensiveCall[] = [
   'HOT',
   'TWO',
   'SLIDE',
-  'HOLD',
-  'CHECK',
   'FIRE',
-  'CUTTER',
+  'HOLD',
   'TOPSIDE',
+  'CUTTER',
+  'PICK_LEFT',
+  'PICK_RIGHT',
+  'BREAK',
 ]
 
 export const TIMING = {
   /** Phase 1 — Setup: players move into place, hint shows, no pressure */
-  setupMs: 1800,
+  setupMs: 1500,
+  /** Brief hold between beats of a multi-call possession */
+  beatGapMs: 650,
   /** How long the "NOW" call cue flashes when the call window opens */
   callCueMs: 800,
   /** How long the resolution (correct/wrong + explanation) stays up */

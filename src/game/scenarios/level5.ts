@@ -2,11 +2,9 @@ import type { Scenario } from '../types'
 import { base, O, D } from './formations'
 
 /**
- * LEVEL 5 — "Eyes Everywhere": ALL 9 calls active.
- * BALL, HOLD, CHECK, HOT, TWO, SLIDE, FIRE, CUTTER, TOPSIDE.
- * New focus: CUTTER (off-ball man cuts through the crease) and
- * TOPSIDE (direct a teammate to force the carrier off the middle).
- * Player controls D1, guarding A1.
+ * LEVEL 5 — "Pick Apart": all 10 calls active, new focus is PICK.
+ * Player controls D1, guarding A1. PICK_LEFT/PICK_RIGHT plus mixed reads.
+ * An off-ball attacker sets a screen on a teammate's defender — read the side.
  */
 export const level5: Scenario[] = [
   {
@@ -15,17 +13,20 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A3,
-    actions: [
-      { type: 'cut', playerIndex: O.M2, team: 'offense', target: { x: 48, y: 98 }, delay: 300, duration: 1100 },
-    ],
-    correctCalls: ['CUTTER'],
-    callOpensAt: 1100,
-    setupHint: 'Watch the middle — someone is slashing through.',
-    explanation:
-      'An off-ball attacker cut right through the crease. The call is CUTTER!',
+    ballStartIndex: O.M2,
+    setupHint: 'A3 sliding up to screen M1\'s defender.',
     tutorial:
-      'When an offensive player without the ball runs through the crease, you yell CUTTER! so a defender picks him up.',
+      'When a teammate is about to get screened, warn him — yell PICK LEFT if the screen comes from his left side!',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A3, pickDirection: 'left', targetDefenderIndex: D.D4, target: { x: 24, y: 50 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_LEFT'],
+        explanation: 'A3 set a screen on M1\'s defender from his left. The call is PICK LEFT!',
+      },
+    ],
   },
   {
     id: 'L5-2',
@@ -34,19 +35,19 @@ export const level5: Scenario[] = [
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
     ballStartIndex: O.M3,
-    actions: [
-      { type: 'move', playerIndex: O.A3, team: 'offense', target: { x: 70, y: 80 }, delay: 200, duration: 600 },
-      { type: 'pass', playerIndex: O.M3, toPlayerIndex: O.A3, delay: 300, duration: 800 },
-      { type: 'catch', playerIndex: O.A3, delay: 1100, duration: 100 },
-      { type: 'move', playerIndex: O.A3, team: 'offense', target: { x: 64, y: 76 }, delay: 1250, duration: 600 },
-    ],
-    correctCalls: ['TOPSIDE'],
-    callOpensAt: 1400,
-    setupHint: 'A teammate is on-ball up the wing — help him.',
-    explanation:
-      'Your teammate is on the ball and the carrier is driving the middle — tell him to force it away. The call is TOPSIDE!',
+    setupHint: 'A2 climbing to pick M3\'s defender.',
     tutorial:
-      'When a teammate is guarding the ball, you call TOPSIDE! to tell him to push the carrier away from the middle of the field.',
+      'If the screen comes from your teammate\'s right side, yell PICK RIGHT so he can fight over it!',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A2, pickDirection: 'right', targetDefenderIndex: D.D6, target: { x: 76, y: 50 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_RIGHT'],
+        explanation: 'A2 set a screen on M3\'s defender from his right. The call is PICK RIGHT!',
+      },
+    ],
   },
   {
     id: 'L5-3',
@@ -54,15 +55,18 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A2,
-    actions: [
-      { type: 'cut', playerIndex: O.M1, team: 'offense', target: { x: 52, y: 99 }, delay: 300, duration: 1000 },
+    ballStartIndex: O.M2,
+    setupHint: 'A3 stepping in to screen M2\'s defender.',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A3, pickDirection: 'left', targetDefenderIndex: D.D5, target: { x: 45, y: 43 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_LEFT'],
+        explanation: 'A3 screened M2\'s defender from the left. The call is PICK LEFT!',
+      },
     ],
-    correctCalls: ['CUTTER'],
-    callOpensAt: 1050,
-    setupHint: 'A middie is diving toward the goal.',
-    explanation:
-      'An off-ball cutter sliced through the crease looking for a feed. The call is CUTTER!',
   },
   {
     id: 'L5-4',
@@ -70,15 +74,18 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.M2,
-    actions: [
-      { type: 'cut', playerIndex: O.A2, team: 'offense', target: { x: 47, y: 97 }, delay: 300, duration: 1200 },
+    ballStartIndex: O.M1,
+    setupHint: 'A3 sneaking up to screen M1\'s defender.',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A3, pickDirection: 'right', targetDefenderIndex: D.D4, target: { x: 34, y: 50 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_RIGHT'],
+        explanation: 'A3 screened M1\'s defender from his right. The call is PICK RIGHT!',
+      },
     ],
-    correctCalls: ['CUTTER'],
-    callOpensAt: 1300,
-    setupHint: 'X attacker is cutting off-ball.',
-    explanation:
-      'The attacker from behind cut hard through the crease. The call is CUTTER!',
   },
   {
     id: 'L5-5',
@@ -86,16 +93,28 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.M1,
-    actions: [
-      { type: 'move', playerIndex: O.M1, team: 'offense', target: { x: 34, y: 52 }, delay: 200, duration: 600 },
-      { type: 'move', playerIndex: O.M1, team: 'offense', target: { x: 42, y: 56 }, delay: 900, duration: 600 },
+    ballStartIndex: O.M2,
+    setupHint: 'A3 picks for M2, then rolls to the crease.',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A3, pickDirection: 'left', targetDefenderIndex: D.D5, target: { x: 45, y: 43 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_LEFT'],
+        prompt: 'Read the screen!',
+        explanation: 'A3 set the screen on M2\'s defender from the left. The call is PICK LEFT!',
+      },
+      {
+        actions: [
+          { type: 'cut', playerIndex: O.A3, team: 'offense', target: { x: 50, y: 100 }, delay: 200, duration: 1000 },
+        ],
+        callOpensAt: 1200,
+        correctCalls: ['CUTTER'],
+        prompt: 'Where did the picker go?',
+        explanation: 'After the pick, A3 rolled hard to the crease wide open. The call is CUTTER!',
+      },
     ],
-    correctCalls: ['TOPSIDE'],
-    callOpensAt: 1300,
-    setupHint: 'Teammate is on-ball at the top — direct him.',
-    explanation:
-      'A teammate has the ball carrier up top driving to the middle — push him out. The call is TOPSIDE!',
   },
   {
     id: 'L5-6',
@@ -104,15 +123,27 @@ export const level5: Scenario[] = [
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
     ballStartIndex: O.M3,
-    actions: [
-      { type: 'move', playerIndex: O.M3, team: 'offense', target: { x: 66, y: 50 }, delay: 200, duration: 700 },
-      { type: 'move', playerIndex: O.M3, team: 'offense', target: { x: 58, y: 54 }, delay: 1000, duration: 600 },
+    setupHint: 'A2 picks for M3, then dives to the crease.',
+    beats: [
+      {
+        actions: [
+          { type: 'pick', playerIndex: O.A2, pickDirection: 'right', targetDefenderIndex: D.D6, target: { x: 76, y: 50 }, delay: 300, duration: 1000 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['PICK_RIGHT'],
+        prompt: 'Read the screen!',
+        explanation: 'A2 screened M3\'s defender from his right. The call is PICK RIGHT!',
+      },
+      {
+        actions: [
+          { type: 'cut', playerIndex: O.A2, team: 'offense', target: { x: 50, y: 100 }, delay: 200, duration: 1000 },
+        ],
+        callOpensAt: 1200,
+        correctCalls: ['CUTTER'],
+        prompt: 'Track the picker!',
+        explanation: 'A2 slipped the pick and cut to the doorstep. The call is CUTTER!',
+      },
     ],
-    correctCalls: ['TOPSIDE'],
-    callOpensAt: 1500,
-    setupHint: 'Far teammate on-ball cutting inside.',
-    explanation:
-      'Your teammate is on the ball and the carrier is rolling to the middle — call him off it. The call is TOPSIDE!',
   },
   {
     id: 'L5-7',
@@ -120,16 +151,20 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A1,
-    actions: [
-      { type: 'dodge', playerIndex: O.A1, team: 'offense', target: { x: 40, y: 96 }, delay: 200, duration: 1100 },
-      { type: 'move', playerIndex: D.D1, team: 'defense', target: { x: 36, y: 90 }, delay: 350, duration: 1100 },
+    ballStartIndex: O.M2,
+    setupHint: 'M2 dodges from up top — no screen anywhere.',
+    beats: [
+      {
+        actions: [
+          { type: 'dodge', playerIndex: O.M2, team: 'offense', target: { x: 50, y: 70 }, delay: 300, duration: 1100 },
+          { type: 'move', playerIndex: D.D5, team: 'defense', target: { x: 50, y: 66 }, delay: 500, duration: 1100 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['SLIDE'],
+        prompt: 'Is that really a pick?',
+        explanation: 'No screen was set — M2 just dodged and beat his man. The call is SLIDE!',
+      },
     ],
-    correctCalls: ['FIRE'],
-    callOpensAt: 1300,
-    setupHint: 'Your man is dodging hard at you.',
-    explanation:
-      'Your man beat you on the dodge and needs a slide now. The call is FIRE!',
   },
   {
     id: 'L5-8',
@@ -137,16 +172,22 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A3,
-    actions: [
-      { type: 'dodge', playerIndex: O.A3, team: 'offense', target: { x: 60, y: 96 }, delay: 200, duration: 1100 },
-      { type: 'move', playerIndex: D.D3, team: 'defense', target: { x: 66, y: 90 }, delay: 350, duration: 1100 },
+    ballStartIndex: O.M2,
+    setupHint: 'A3 drifts toward M3\'s defender but veers away.',
+    beats: [
+      {
+        actions: [
+          { type: 'move', playerIndex: O.A3, team: 'offense', target: { x: 70, y: 60 }, delay: 200, duration: 600 },
+          { type: 'move', playerIndex: O.A3, team: 'offense', target: { x: 84, y: 78 }, delay: 800, duration: 600 },
+          { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.M3, delay: 400, duration: 700 },
+          { type: 'catch', playerIndex: O.M3, delay: 1100, duration: 100 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['HOT'],
+        prompt: 'Fake pick — read the ball!',
+        explanation: 'A3 faked the screen and bailed; the ball is one pass from your man. The call is HOT!',
+      },
     ],
-    correctCalls: ['SLIDE'],
-    callOpensAt: 1350,
-    setupHint: 'Another attacker is beating his man.',
-    explanation:
-      'A different attacker beat his defender and is driving the goal — help is needed. The call is SLIDE!',
   },
   {
     id: 'L5-9',
@@ -155,15 +196,18 @@ export const level5: Scenario[] = [
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
     ballStartIndex: O.M2,
-    actions: [
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.M1, delay: 200, duration: 700 },
-      { type: 'catch', playerIndex: O.M1, delay: 900, duration: 100 },
+    setupHint: 'A3 dodges from the wing and beats his man.',
+    beats: [
+      {
+        actions: [
+          { type: 'dodge', playerIndex: O.A3, team: 'offense', target: { x: 66, y: 92 }, delay: 300, duration: 1100 },
+          { type: 'move', playerIndex: D.D3, team: 'defense', target: { x: 70, y: 88 }, delay: 500, duration: 1100 },
+        ],
+        callOpensAt: 1500,
+        correctCalls: ['SLIDE'],
+        explanation: 'A3 beat D3 off the dodge and is driving to the goal. The call is SLIDE!',
+      },
     ],
-    correctCalls: ['HOT'],
-    callOpensAt: 1150,
-    setupHint: 'Ball one pass from your man.',
-    explanation:
-      'The ball is one pass away and you are the next slide. The call is HOT!',
   },
   {
     id: 'L5-10',
@@ -171,16 +215,20 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.M2,
-    actions: [
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A3, delay: 200, duration: 900 },
-      { type: 'catch', playerIndex: O.A3, delay: 1100, duration: 100 },
+    ballStartIndex: O.A3,
+    setupHint: 'A wing shot rips toward the cage...',
+    beats: [
+      {
+        actions: [
+          { type: 'shot', playerIndex: O.A3, delay: 300, duration: 600 },
+          { type: 'save', playerIndex: 0, delay: 950, duration: 300 },
+        ],
+        callOpensAt: 1350,
+        correctCalls: ['BREAK'],
+        breakTrigger: 'save',
+        explanation: 'The goalie made the save — the play is dead. The call is BREAK!',
+      },
     ],
-    correctCalls: ['TWO'],
-    callOpensAt: 1400,
-    setupHint: 'Ball swung to the far side.',
-    explanation:
-      'The ball is two passes away from your man — you are help-side. The call is TWO!',
   },
   {
     id: 'L5-11',
@@ -188,16 +236,19 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A1, delay: 300, duration: 800 },
-      { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
-      { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 28, y: 80 }, delay: 1250, duration: 500 },
+    ballStartIndex: O.M1,
+    setupHint: 'Ball coming down to your man.',
+    beats: [
+      {
+        actions: [
+          { type: 'pass', playerIndex: O.M1, toPlayerIndex: O.A1, delay: 300, duration: 800 },
+          { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
+        ],
+        callOpensAt: 1350,
+        correctCalls: ['BALL'],
+        explanation: 'Your man caught it and squared to the cage — a threat. The call is BALL!',
+      },
     ],
-    correctCalls: ['BALL'],
-    callOpensAt: 1350,
-    setupHint: 'Ball coming to your man.',
-    explanation:
-      'Your man caught it and squared to the goal — a threat. The call is BALL!',
   },
   {
     id: 'L5-12',
@@ -205,13 +256,18 @@ export const level5: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.A1, toPlayerIndex: O.A3, delay: 300, duration: 900 },
+    ballStartIndex: O.M2,
+    setupHint: 'Ball swung to the far side.',
+    beats: [
+      {
+        actions: [
+          { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A3, delay: 200, duration: 900 },
+          { type: 'catch', playerIndex: O.A3, delay: 1100, duration: 100 },
+        ],
+        callOpensAt: 1400,
+        correctCalls: ['TWO'],
+        explanation: 'The ball is two passes away from your man — you are help-side. The call is TWO!',
+      },
     ],
-    correctCalls: ['CHECK'],
-    callOpensAt: 800,
-    setupHint: 'The ball is in the air across the field.',
-    explanation: 'The ball is in flight on a pass. The call is CHECK!',
   },
 ]

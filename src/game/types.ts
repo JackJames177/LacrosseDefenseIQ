@@ -3,11 +3,13 @@ export type DefensiveCall =
   | 'HOT'
   | 'TWO'
   | 'SLIDE'
-  | 'HOLD'
-  | 'CHECK'
   | 'FIRE'
-  | 'CUTTER'
+  | 'HOLD'
   | 'TOPSIDE'
+  | 'CUTTER'
+  | 'PICK_LEFT'
+  | 'PICK_RIGHT'
+  | 'BREAK'
 
 export type Team = 'offense' | 'defense'
 
@@ -21,40 +23,69 @@ export interface PlayerPosition {
   y: number
 }
 
-export type ActionType = 'pass' | 'dodge' | 'cut' | 'move' | 'catch'
+export type ActionType =
+  | 'pass'
+  | 'dodge'
+  | 'cut'
+  | 'move'
+  | 'catch'
+  | 'pick'
+  | 'save'
+  | 'ground_ball'
+  | 'shot'
 
 export interface GameAction {
   type: ActionType
-  /** Index into the matching team array (offense for pass/dodge/cut/catch) */
+  /** Index into the matching team array (offense unless team:'defense') */
   playerIndex: number
   team?: Team
   target?: { x: number; y: number }
   /** ms for the animation */
   duration: number
-  /** ms after scenario action-phase start */
+  /** ms after this beat's action phase starts */
   delay: number
-  /** for 'pass' — index of receiving offensive player (ball travels to them) */
+  /** for 'pass' — index of receiving offensive player (ball travels there) */
   toPlayerIndex?: number
+  /** for 'pick' — which side the screen comes from */
+  pickDirection?: 'left' | 'right'
+  /** for 'pick' — which defender (defense sub-array index) is being screened */
+  targetDefenderIndex?: number
+}
+
+/**
+ * A single call within a scenario. v2 scenarios can chain several beats —
+ * the play keeps developing and the timer RESETS for each beat's call.
+ * A simple single-call scenario is just one beat.
+ */
+export interface Beat {
+  /** Actions for this beat. delays are relative to this beat's action start. */
+  actions: GameAction[]
+  /** ms from this beat's action start until the call window opens */
+  callOpensAt: number
+  /** Accepted call(s). First entry is the canonical answer. */
+  correctCalls: DefensiveCall[]
+  /** Shown if the player gets it wrong / times out */
+  explanation: string
+  /** Short prompt shown while this beat develops, e.g. "Read the screen!" */
+  prompt?: string
+  /** For BREAK beats — what triggered it (shown in the breakdown) */
+  breakTrigger?: 'save' | 'ground_ball'
 }
 
 export interface Scenario {
   id: string
   level: number
   initialPositions: PlayerPosition[]
-  /** Index into the defense players (in order they appear in initialPositions) */
+  /** Index into the defense sub-array — the defender the player controls */
   playerDefenderIndex: number
-  /** Which offensive player the player's defender is guarding (index into offense) */
+  /** Offense index the player's defender is guarding */
   guardedAttackerIndex: number
-  actions: GameAction[]
-  /** Accepted correct call(s). First entry is the canonical answer. */
-  correctCalls: DefensiveCall[]
+  /** One or more sequential beats (calls). */
+  beats: Beat[]
   setupHint: string
-  explanation: string
-  /** ms the scenario action plays before the call window opens */
-  callOpensAt: number
-  /** Optional tutorial tooltip (used in early Level 1 scenarios) */
+  /** Optional tutorial tooltip (used in early teaching scenarios) */
   tutorial?: string
-  /** Loose ground ball — ball sits here instead of on a player */
+  /** Loose ground ball — ball sits here at scenario start instead of on a player */
   ballOverride?: { x: number; y: number }
   /** Offense index that starts with the ball (defaults to first pass/dodge origin) */
   ballStartIndex?: number
@@ -69,10 +100,8 @@ export type GamePhase =
   | 'resolved-wrong'
   | 'resolved-timeout'
 
-export interface ScenarioResult {
-  scenarioId: string
-  index: number
-  setupHint: string
+/** One call attempt within a scenario (a scenario has 1+). */
+export interface CallAttempt {
   correctCall: DefensiveCall
   playerCall: DefensiveCall | null
   correct: boolean
@@ -80,6 +109,14 @@ export interface ScenarioResult {
   reactionMs: number
   pointsEarned: number
   explanation: string
+  breakTrigger?: 'save' | 'ground_ball'
+}
+
+export interface ScenarioResult {
+  scenarioId: string
+  index: number
+  setupHint: string
+  calls: CallAttempt[]
 }
 
 export interface LevelResult {
@@ -98,7 +135,7 @@ export interface LevelMeta {
   level: number
   name: string
   blurb: string
-  /** Calls unlocked / available as buttons in this level */
+  /** Calls available as buttons in this level */
   calls: DefensiveCall[]
   /** Seconds per call */
   timerSeconds: number

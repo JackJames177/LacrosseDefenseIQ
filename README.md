@@ -1,12 +1,13 @@
 # DEFENSIVE IQ 🥍
 
-Lacrosse defensive **communication** training game. Read the play on an
-animated top-down field and make the right defensive call — BALL, HOT, TWO,
-SLIDE, HOLD, CHECK, FIRE, CUTTER, TOPSIDE — before the timer runs out.
+Lacrosse defensive **communication** training game — **v2 (10 calls)**. Tap
+READY, read the play on an animated top-down field, then make the right
+defensive call before the timer runs out. Some possessions chain several
+calls — keep talking.
 
-Built for Mason. 6 levels from "Ball Awareness" to a full-speed final exam,
-69 hand-crafted scenarios, arcade scoring with streak multipliers, and a
-teaching breakdown after every level.
+Built for Mason. 6 levels from "Ball Basics" to a full-speed multi-call final
+exam, hand-crafted scenarios, arcade scoring with streak + PICK-precision
+bonuses, and a teaching breakdown after every level.
 
 ## Play It
 
@@ -15,21 +16,22 @@ teaching breakdown after every level.
 Install on a phone/iPad: open the link in Safari or Chrome →
 **Add to Home Screen**. It then runs full-screen and offline (PWA).
 
-## The 9 Calls
+## The 10 Calls
 
-| Call | Trigger |
-|------|---------|
-| BALL | Your man has the ball and is a threat |
-| HOT | You're the nearest help defender (next slide) |
-| TWO | You're two passes away, help-side |
-| SLIDE | A teammate got beat — you slide to help |
-| HOLD | Your man has the ball but is NOT threatening |
-| CHECK | Ball is in the air or loose on the ground |
-| FIRE | You're getting beaten — bring the hot man early |
-| CUTTER | An off-ball attacker is cutting through the crease |
-| TOPSIDE | Direct a teammate to force the ball away from the middle |
+| Call | Key | Trigger |
+|------|-----|---------|
+| BALL | B | You're on the ball carrier and he's a threat |
+| HOT | H | You're the next slide — nearest help |
+| TWO | T | You're two passes away, help-side |
+| SLIDE | S | You're sliding to help a beaten teammate |
+| FIRE | F | You're getting beaten — need help NOW |
+| HOLD | O | Your man has the ball but isn't threatening |
+| TOPSIDE | P | Direct a teammate to force the dodger from the middle |
+| CUTTER | U | An off-ball man is cutting through the crease |
+| PICK LEFT / RIGHT | L / R | A screen is being set on a teammate — call the side |
+| BREAK | K | Save or ground ball — transition to the clear |
 
-Keyboard shortcuts (desktop): B H T S O C F U P.
+PICK is directional — calling the exact side (L vs R) earns a precision bonus.
 
 ## Development
 

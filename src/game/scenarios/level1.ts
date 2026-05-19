@@ -2,9 +2,9 @@ import type { Scenario } from '../types'
 import { base, O, D } from './formations'
 
 /**
- * LEVEL 1 — "Ball Awareness": only BALL, HOLD, CHECK.
- * Player controls D1, guarding A1 (offense index 0).
- * Slow timer (4s). Tutorials on the first three.
+ * LEVEL 1 — "Ball Basics": BALL, HOLD, BREAK only. Timer 6s.
+ * Player controls D1, guarding A1. Tutorials on the first three.
+ * Single-beat scenarios (one call each).
  */
 export const level1: Scenario[] = [
   {
@@ -13,16 +13,20 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A1, delay: 300, duration: 800 },
-      { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
-    ],
-    correctCalls: ['BALL'],
-    callOpensAt: 1350,
     setupHint: 'Watch the ball — it is coming to your man.',
-    explanation: 'Your man caught the ball and is a threat. The call is BALL!',
     tutorial:
-      'When YOUR man catches the ball, you yell BALL! so everyone knows you have the ball.',
+      'When YOUR man catches the ball and faces the cage, yell BALL! so everyone knows you have him.',
+    beats: [
+      {
+        actions: [
+          { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A1, delay: 300, duration: 800 },
+          { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
+        ],
+        callOpensAt: 1350,
+        correctCalls: ['BALL'],
+        explanation: 'Your man caught it and is facing the cage — a threat. The call is BALL!',
+      },
+    ],
   },
   {
     id: 'L1-2',
@@ -31,16 +35,19 @@ export const level1: Scenario[] = [
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
     ballStartIndex: O.A1,
-    actions: [
-      { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 16, y: 94 }, delay: 200, duration: 700 },
-    ],
-    correctCalls: ['HOLD'],
-    callOpensAt: 1050,
     setupHint: 'Your man has the ball but is turning away.',
-    explanation:
-      'Your man has the ball but turned his back to the goal — not a threat. The call is HOLD!',
     tutorial:
-      'If your man has the ball but is NOT a threat (back to goal, cradling), you call HOLD!',
+      'If your man has the ball but is NOT a threat (back to the goal, cradling), you call HOLD!',
+    beats: [
+      {
+        actions: [
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 14, y: 95 }, delay: 200, duration: 800 },
+        ],
+        callOpensAt: 1150,
+        correctCalls: ['HOLD'],
+        explanation: 'He has the ball but turned his back behind GLE — not a threat. The call is HOLD!',
+      },
+    ],
   },
   {
     id: 'L1-3',
@@ -48,16 +55,22 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.A1, toPlayerIndex: O.A3, delay: 300, duration: 1000 },
-    ],
-    correctCalls: ['CHECK'],
-    callOpensAt: 800,
-    setupHint: 'The ball is being passed across.',
-    explanation: 'The ball is in the air on a pass. The call is CHECK!',
+    ballStartIndex: O.A3,
+    setupHint: 'A shot is coming...',
     tutorial:
-      'Any time the ball is in the air or loose on the ground, the whole defense yells CHECK!',
+      'When the goalie makes a save (or the defense gets a ground ball), the play flips — yell BREAK to start the clear!',
+    beats: [
+      {
+        actions: [
+          { type: 'shot', playerIndex: O.A3, delay: 300, duration: 600 },
+          { type: 'save', playerIndex: 0, delay: 950, duration: 300 },
+        ],
+        callOpensAt: 1350,
+        correctCalls: ['BREAK'],
+        breakTrigger: 'save',
+        explanation: 'The goalie made the save — the play is dead. BREAK gets the whole team clearing.',
+      },
+    ],
   },
   {
     id: 'L1-4',
@@ -65,15 +78,19 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.M1, toPlayerIndex: O.M2, delay: 200, duration: 600 },
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A1, delay: 1000, duration: 800 },
-      { type: 'catch', playerIndex: O.A1, delay: 1800, duration: 100 },
+    setupHint: 'Ball moving toward your man.',
+    beats: [
+      {
+        actions: [
+          { type: 'pass', playerIndex: O.M1, toPlayerIndex: O.A1, delay: 300, duration: 800 },
+          { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 26, y: 80 }, delay: 1250, duration: 500 },
+        ],
+        callOpensAt: 1450,
+        correctCalls: ['BALL'],
+        explanation: 'Your man caught it and squared to the cage. The call is BALL!',
+      },
     ],
-    correctCalls: ['BALL'],
-    callOpensAt: 2050,
-    setupHint: 'Ball is moving down the field toward your man.',
-    explanation: 'Your man received the ball and faces the goal. The call is BALL!',
   },
   {
     id: 'L1-5',
@@ -81,14 +98,18 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A3,
-    actions: [
-      { type: 'pass', playerIndex: O.A3, toPlayerIndex: O.A2, delay: 300, duration: 900 },
+    ballStartIndex: O.A1,
+    setupHint: 'Your man has it, just standing there.',
+    beats: [
+      {
+        actions: [
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 20, y: 90 }, delay: 300, duration: 600 },
+        ],
+        callOpensAt: 1100,
+        correctCalls: ['HOLD'],
+        explanation: 'He has the ball but is cradling, not attacking. The call is HOLD!',
+      },
     ],
-    correctCalls: ['CHECK'],
-    callOpensAt: 750,
-    setupHint: 'Ball is on the far side.',
-    explanation: 'The ball is in the air between attackers. The call is CHECK!',
   },
   {
     id: 'L1-6',
@@ -96,14 +117,19 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.M3, toPlayerIndex: O.A1, delay: 300, duration: 900 },
-      { type: 'catch', playerIndex: O.A1, delay: 1200, duration: 100 },
+    ballOverride: { x: 44, y: 70 },
+    setupHint: 'The ball is loose on the ground!',
+    beats: [
+      {
+        actions: [
+          { type: 'ground_ball', playerIndex: D.D2, team: 'defense', target: { x: 46, y: 72 }, delay: 300, duration: 700 },
+        ],
+        callOpensAt: 1050,
+        correctCalls: ['BREAK'],
+        breakTrigger: 'ground_ball',
+        explanation: 'Defense scooped the ground ball — possession flipped. The call is BREAK!',
+      },
     ],
-    correctCalls: ['BALL'],
-    callOpensAt: 1450,
-    setupHint: 'Skip pass coming across the field.',
-    explanation: 'Your man caught the skip pass and is dangerous. The call is BALL!',
   },
   {
     id: 'L1-7',
@@ -111,15 +137,18 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A1,
-    actions: [
-      { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 30, y: 96 }, delay: 200, duration: 700 },
+    setupHint: 'Skip pass across to your man.',
+    beats: [
+      {
+        actions: [
+          { type: 'pass', playerIndex: O.M3, toPlayerIndex: O.A1, delay: 300, duration: 900 },
+          { type: 'catch', playerIndex: O.A1, delay: 1200, duration: 100 },
+        ],
+        callOpensAt: 1450,
+        correctCalls: ['BALL'],
+        explanation: 'He caught the skip and faces up in triple threat — dangerous. The call is BALL!',
+      },
     ],
-    correctCalls: ['HOLD'],
-    callOpensAt: 1050,
-    setupHint: 'Your man has the ball and is backing it out.',
-    explanation:
-      'Your man is backing the ball out to reset — not threatening. The call is HOLD!',
   },
   {
     id: 'L1-8',
@@ -127,15 +156,18 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballStartIndex: O.A2,
-    actions: [
-      { type: 'pass', playerIndex: O.A2, toPlayerIndex: O.A1, delay: 300, duration: 1000 },
+    ballStartIndex: O.A1,
+    setupHint: 'Your man backing it out.',
+    beats: [
+      {
+        actions: [
+          { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 30, y: 98 }, delay: 200, duration: 800 },
+        ],
+        callOpensAt: 1150,
+        correctCalls: ['HOLD'],
+        explanation: 'He is backing the ball out to reset — not threatening. The call is HOLD!',
+      },
     ],
-    correctCalls: ['CHECK'],
-    callOpensAt: 850,
-    setupHint: 'Pass coming from behind the goal to your man.',
-    explanation:
-      'The ball is still in the air — before it lands the call is CHECK!',
   },
   {
     id: 'L1-9',
@@ -143,31 +175,19 @@ export const level1: Scenario[] = [
     initialPositions: base(),
     playerDefenderIndex: D.D1,
     guardedAttackerIndex: O.A1,
-    ballOverride: { x: 42, y: 70 },
-    actions: [
-      { type: 'move', playerIndex: O.M2, team: 'offense', target: { x: 44, y: 66 }, delay: 200, duration: 800 },
-      { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 38, y: 74 }, delay: 200, duration: 800 },
+    ballStartIndex: O.A1,
+    setupHint: 'Your man winds up to shoot.',
+    beats: [
+      {
+        actions: [
+          { type: 'shot', playerIndex: O.A1, delay: 300, duration: 600 },
+          { type: 'save', playerIndex: 0, delay: 950, duration: 300 },
+        ],
+        callOpensAt: 1350,
+        correctCalls: ['BREAK'],
+        breakTrigger: 'save',
+        explanation: 'Shot saved by the goalie — dead play. The call is BREAK to start the clear!',
+      },
     ],
-    correctCalls: ['CHECK'],
-    callOpensAt: 900,
-    setupHint: 'The ball is loose on the ground!',
-    explanation: 'A loose ground ball — everyone calls CHECK!',
-  },
-  {
-    id: 'L1-10',
-    level: 1,
-    initialPositions: base(),
-    playerDefenderIndex: D.D1,
-    guardedAttackerIndex: O.A1,
-    actions: [
-      { type: 'pass', playerIndex: O.M2, toPlayerIndex: O.A1, delay: 300, duration: 800 },
-      { type: 'catch', playerIndex: O.A1, delay: 1100, duration: 100 },
-      { type: 'move', playerIndex: O.A1, team: 'offense', target: { x: 26, y: 78 }, delay: 1250, duration: 500 },
-    ],
-    correctCalls: ['BALL'],
-    callOpensAt: 1400,
-    setupHint: 'Your man is getting the ball and squaring up.',
-    explanation:
-      'Your man has the ball and is squared to the goal — a threat. The call is BALL!',
   },
 ]

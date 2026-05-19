@@ -6,11 +6,15 @@ export default function PlayFeedback() {
   const phase = useGame((s) => s.phase)
   const scenarios = useGame((s) => s.scenarios)
   const scenarioIndex = useGame((s) => s.scenarioIndex)
+  const beatIndex = useGame((s) => s.beatIndex)
   const outcome = useGame((s) => s.lastOutcome)
   const scenario = scenarios[scenarioIndex]
   if (!scenario) return null
 
   const watching = phase === 'setup' || phase === 'action'
+  const totalBeats = scenario.beats.length
+  const beat = scenario.beats[beatIndex]
+  const hint = beat?.prompt ?? scenario.setupHint
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col items-center">
@@ -24,9 +28,14 @@ export default function PlayFeedback() {
           )}
           <div className="px-4 py-1.5 rounded-full bg-black/55 border border-white/10 backdrop-blur-sm">
             <span className="font-mono text-xs sm:text-sm text-white/85">
-              {scenario.setupHint}
+              {hint}
             </span>
           </div>
+          {totalBeats > 1 && (
+            <span className="font-mono text-[10px] tracking-[0.3em] text-ball/70">
+              CALL {beatIndex + 1} OF {totalBeats}
+            </span>
+          )}
         </div>
       )}
 
@@ -61,9 +70,19 @@ export default function PlayFeedback() {
             {outcome.speedBonus && (
               <div className="font-display text-2xl text-ball">QUICK CALL!</div>
             )}
+            {outcome.pickBonus && (
+              <div className="font-display text-2xl text-ball">
+                PICK READ +25
+              </div>
+            )}
             {outcome.multiplier > 1 && (
               <div className="font-display text-xl text-accent">
                 x{outcome.multiplier} STREAK
+              </div>
+            )}
+            {outcome.hasMoreBeats && (
+              <div className="font-display text-xl text-defense mt-1">
+                KEEP TALKING →
               </div>
             )}
           </div>
@@ -84,6 +103,11 @@ export default function PlayFeedback() {
               <p className="font-body text-sm text-white/85 mt-1">
                 {outcome.explanation}
               </p>
+              {outcome.hasMoreBeats && (
+                <p className="font-mono text-[11px] text-defense mt-2">
+                  → the play keeps going — stay ready
+                </p>
+              )}
             </div>
           </div>
         )}
