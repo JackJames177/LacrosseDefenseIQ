@@ -30,7 +30,14 @@ export default function App() {
   const screen = useGame((s) => s.screen)
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div
+      className="h-full w-full overflow-hidden"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
       <div className="h-full w-full overflow-y-auto no-scrollbar">
         {screen === 'menu' && <MainMenu />}
         {screen === 'levelSelect' && <LevelSelect />}
